@@ -5,10 +5,13 @@ import {
   varchar,
   text,
   timestamp,
+  uniqueIndex,
+  primaryKey,
 } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
   username: varchar("username", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull(),
   teamId: int("team_id")
@@ -42,7 +45,15 @@ export const sites = mysqlTable("sites", {
   teamId: int("team_id")
     .notNull()
     .references(() => teams.id),
-  location: varchar("location", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const locations = mysqlTable("locations", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  siteId: int("site_id")
+    .notNull()
+    .references(() => sites.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -55,11 +66,36 @@ export const articleSites = mysqlTable("article_sites", {
     .references(() => sites.id),
 });
 
-export const customers = mysqlTable("customers", {
-  id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull(),
-  phones: text("phones").notNull(), // Store as JSON string
-  siteId: int("site_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+export const articleLocations = mysqlTable(
+  "article_locations",
+  {
+    articleId: int("article_id")
+      .notNull()
+      .references(() => articles.id),
+    locationId: int("location_id")
+      .notNull()
+      .references(() => locations.id),
+  },
+  (table) => [primaryKey({ columns: [table.articleId, table.locationId] })],
+);
+
+export const customers = mysqlTable(
+  "customers",
+  {
+    id: int("id").autoincrement().notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    email: varchar("email", { length: 255 }).notNull(),
+    phones: text("phones").notNull(), // JSON string or normalize
+    siteId: int("site_id")
+      .notNull()
+      .references(() => sites.id),
+    teamId: int("team_id")
+      .notNull()
+      .references(() => teams.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.id] }),
+    uniqueIndex("idx_customers_email").on(table.email),
+  ],
+);
