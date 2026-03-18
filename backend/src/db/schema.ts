@@ -7,22 +7,23 @@ import {
   timestamp,
   uniqueIndex,
   primaryKey,
+  mysqlEnum,
 } from "drizzle-orm/mysql-core";
 
-export const users = mysqlTable("users", {
+export const members = mysqlTable("members", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   username: varchar("username", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull(),
-  teamId: int("team_id")
+  guildId: int("guild_id")
     .notNull()
-    .references(() => teams.id),
-  role: varchar("role", { length: 255 }),
+    .references(() => guild.id),
+  role: mysqlEnum("role", ["member", "sub-officer","officer", "guildMaster"]),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const teams = mysqlTable("teams", {
+export const guild = mysqlTable("guild", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -33,18 +34,18 @@ export const articles = mysqlTable("articles", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
   content: text("content").notNull(),
-  teamId: int("team_id")
+  guildId: int("guild_id")
     .notNull()
-    .references(() => teams.id),
+    .references(() => guild.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const sites = mysqlTable("sites", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  teamId: int("team_id")
+  guildId: int("guild_id")
     .notNull()
-    .references(() => teams.id),
+    .references(() => guild.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -64,7 +65,7 @@ export const articleSites = mysqlTable("article_sites", {
   siteId: int("site_id")
     .notNull()
     .references(() => sites.id),
-});
+}, (table) => [primaryKey({columns: [table.articleId, table.siteId]})]);
 
 export const articleLocations = mysqlTable(
   "article_locations",
@@ -89,9 +90,9 @@ export const customers = mysqlTable(
     siteId: int("site_id")
       .notNull()
       .references(() => sites.id),
-    teamId: int("team_id")
+    guildId: int("guild_id")
       .notNull()
-      .references(() => teams.id),
+      .references(() => guild.id),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
@@ -99,3 +100,8 @@ export const customers = mysqlTable(
     uniqueIndex("idx_customers_email").on(table.email),
   ],
 );
+
+export const customer_phones = mysqlTable("customer_phones", {
+  id: int("id").autoincrement().notNull(),
+  customerId: int("customer_id").notNull().references(()=> customers.id),
+})
